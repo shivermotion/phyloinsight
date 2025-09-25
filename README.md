@@ -3,13 +3,15 @@ PhyloInsight — phylogeny-aware genomic variant querying in the browser.
 ## Getting Started
 
 Prerequisites:
+
 - Node.js 20+
 - Yarn
 
 Setup Pyodide assets:
-1) Download Pyodide 0.28.3 from `https://cdn.jsdelivr.net/pyodide/v0.28.3/full/`
-2) Place the contents under `public/pyodide/` so files like `public/pyodide/pyodide.asm.wasm` exist
-3) (Optional) Put Python wheels under `public/python-packages/`
+
+1. Download Pyodide 0.28.3 from `https://cdn.jsdelivr.net/pyodide/v0.28.3/full/`
+2. Place the contents under `public/pyodide/` so files like `public/pyodide/pyodide.asm.wasm` exist
+3. (Optional) Put Python wheels under `public/python-packages/`
 
 Run the development server:
 
@@ -20,11 +22,13 @@ yarn dev
 Open `http://localhost:3000` for the landing page, or go directly to `http://localhost:3000/analyze`.
 
 Analyze flow:
-1) Upload a FASTA or VCF (supports `.vcf.gz` via client-side inflate)
-2) Enter a natural-language query (e.g., "How conserved is this variant in mammals?")
-3) View the tree and generated explanation
+
+1. Upload a FASTA or VCF (supports `.vcf.gz` via client-side inflate)
+2. Enter a natural-language query (e.g., "How conserved is this variant in mammals?")
+3. View the tree and generated explanation
 
 Notes:
+
 - If Pyodide assets are missing you will see 404s for `/pyodide/*` and analysis will fallback with an error message.
 - Transformers.js models load on-demand; first use may take time.
 

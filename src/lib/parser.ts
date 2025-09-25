@@ -10,7 +10,8 @@ export function detectFormat(text: string): 'fasta' | 'vcf' | 'unknown' {
 
 // Parse VCF minimally to pseudo-FASTA by constructing presence/absence strings per sample.
 // For simplicity: 1 for variant present (ALT != .), 0 for reference, ignoring phasing/zygosity.
-export function vcfToPseudoFasta(text: string): string {
+// Optimized for large files with sampling
+export function vcfToPseudoFasta(text: string, maxVariants: number = 10000): string {
   const lines = text.split(/\r?\n/);
   let header: string | null = null;
   for (const l of lines) {
@@ -21,8 +22,19 @@ export function vcfToPseudoFasta(text: string): string {
   const samples = cols.slice(9);
   const seqs: Record<string, string[]> = Object.fromEntries(samples.map(s => [s, []]));
 
-  for (const l of lines) {
-    if (!l || l.startsWith('#')) continue;
+  // Filter to variant lines only
+  const variantLines = lines.filter(l => l && !l.startsWith('#'));
+  
+  // Sample variants if file is too large
+  let processedLines = variantLines;
+  if (variantLines.length > maxVariants) {
+    console.log(`📊 VCF has ${variantLines.length} variants, sampling ${maxVariants}`);
+    // Take every nth line to get a representative sample
+    const step = Math.floor(variantLines.length / maxVariants);
+    processedLines = variantLines.filter((_, i) => i % step === 0).slice(0, maxVariants);
+  }
+
+  for (const l of processedLines) {
     const parts = l.split('\t');
     if (parts.length < 10) continue;
     const ref = parts[3];

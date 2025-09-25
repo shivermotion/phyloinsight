@@ -17,6 +17,9 @@ export interface QueryParams {
 
 export async function parseQuery(text: string): Promise<QueryParams> {
   try {
+    if (typeof window === 'undefined') {
+      return { species: 'all', metric: 'conservation' };
+    }
     await initAI();
     if (!classifier) throw new Error('classifier not ready');
     const result = await (classifier as Pipeline)(text);
@@ -24,7 +27,8 @@ export async function parseQuery(text: string): Promise<QueryParams> {
       species: (Array.isArray(result) && (result as any)[0]?.label?.toLowerCase().includes('mammal')) ? 'mammals' : 'all',
       metric: 'conservation',
     };
-  } catch {
+  } catch (err) {
+    console.log('AI parsing fallback:', err);
     return { species: 'all', metric: 'conservation' };
   }
 }

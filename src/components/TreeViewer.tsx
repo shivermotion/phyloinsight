@@ -14,19 +14,30 @@ export default function TreeViewer({ newick }: TreeViewerProps) {
     if (!ref.current || !newick) return;
     d3.select(ref.current).selectAll('*').remove();
 
-    // phylotree exposes a named export { phylotree } which is the constructor
-    // @ts-expect-error types not bundled
-    const tree = new Phylotree(newick);
-    // @ts-expect-error render signature is dynamic
-    tree.render({
-      container: ref.current,
-      width: 800,
-      height: 600,
-      'left-right-spacing': 'fit-to-size',
-      'top-bottom-spacing': 'fit-to-size',
-      zoom: true,
-      'node-circle-size': 4,
-    });
+    // Ensure Newick has branch lengths
+    const normalizedNewick = newick.includes(':')
+      ? newick
+      : newick.replace(/\)/g, ':1.0)').replace(/;/g, ':1.0;');
+    console.log('🌳 Rendering tree with Newick:', normalizedNewick);
+
+    try {
+      // phylotree exposes a named export { phylotree } which is the constructor
+      // @ts-expect-error types not bundled
+      const tree = new Phylotree(normalizedNewick);
+      // @ts-expect-error render signature is dynamic
+      tree.render({
+        container: ref.current,
+        width: 800,
+        height: 600,
+        'left-right-spacing': 'fit-to-size',
+        'top-bottom-spacing': 'fit-to-size',
+        zoom: true,
+        'node-circle-size': 4,
+      });
+      console.log('✅ Tree rendered successfully');
+    } catch (err) {
+      console.error('❌ Tree rendering error:', err);
+    }
   }, [newick]);
 
   return (
