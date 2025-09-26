@@ -12,18 +12,16 @@ export function getPyodide(): Promise<PyodideInterface> {
       // Dynamic import to avoid bundler issues
       const { loadPyodide } = await import('pyodide');
 
-      // Prefer local assets if available
-      let indexURL = '/pyodide/';
-      try {
-        const head = await fetch('/pyodide/pyodide.js', { method: 'HEAD', cache: 'no-store' });
-        if (!head.ok) throw new Error(`HEAD /pyodide/pyodide.js -> ${head.status}`);
-        console.log('🧩 Using local Pyodide assets at /pyodide/');
-      } catch (e) {
-        indexURL = 'https://cdn.jsdelivr.net/pyodide/v0.28.3/full/';
-        console.warn('⚠️ Local Pyodide not found, using CDN:', e);
-      }
+      // Use CDN by default to avoid local asset issues
+      const indexURL = 'https://cdn.jsdelivr.net/pyodide/v0.28.3/full/';
+      console.log('🧩 Using Pyodide CDN:', indexURL);
 
-      return await loadPyodide({ indexURL });
+      try {
+        return await loadPyodide({ indexURL });
+      } catch (loadError) {
+        console.error('❌ Pyodide CDN load failed:', loadError);
+        throw loadError;
+      }
     })();
   }
   return pyodideInstance;

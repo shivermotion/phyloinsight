@@ -14,6 +14,20 @@ export default function AnalyzePage() {
   const [newick, setNewick] = useState<string>('(A:1.0,(B:1.0,C:1.0):1.0);');
   const [explanation, setExplanation] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  const [pyodideStatus, setPyodideStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
+
+  // Check Pyodide status on mount
+  useEffect(() => {
+    getPyodide()
+      .then(() => {
+        setPyodideStatus('ready');
+        console.log('✅ Pyodide ready for analysis');
+      })
+      .catch(error => {
+        setPyodideStatus('failed');
+        console.warn('❌ Pyodide failed to load:', error);
+      });
+  }, []);
 
   // Restore persisted state
   useEffect(() => {
@@ -39,10 +53,36 @@ export default function AnalyzePage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
-      <h1 className="text-2xl font-semibold">Analyze Variants with Phylogenetic Context</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Analyze Variants with Phylogenetic Context</h1>
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-gray-600">Pyodide:</span>
+          <span
+            className={`px-2 py-1 rounded text-xs font-medium ${
+              pyodideStatus === 'ready'
+                ? 'bg-green-100 text-green-800'
+                : pyodideStatus === 'loading'
+                ? 'bg-yellow-100 text-yellow-800'
+                : 'bg-red-100 text-red-800'
+            }`}
+          >
+            {pyodideStatus === 'ready'
+              ? 'Ready'
+              : pyodideStatus === 'loading'
+              ? 'Loading...'
+              : 'Failed'}
+          </span>
+        </div>
+      </div>
       <FileUploader onFileLoaded={content => setFileContent(content)} />
       <QueryInput
         onSubmit={async text => {
+          if (pyodideStatus !== 'ready') {
+            setExplanation(
+              `Pyodide is ${pyodideStatus}. Please wait for it to load before running analysis.`
+            );
+            return;
+          }
           setLoading(true);
           try {
             console.log('🔍 Starting analysis for query:', text);

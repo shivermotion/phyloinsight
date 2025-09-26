@@ -25,24 +25,15 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Cache-first for Pyodide and Python packages, network-first for others
+// Network-first for all requests (simplified approach)
 self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
-  const isPyodide = url.pathname.startsWith('/pyodide/') || url.pathname.startsWith('/python-packages/');
-
-  if (isPyodide) {
-    event.respondWith(
-      caches.match(event.request).then((cached) =>
-        cached || fetch(event.request).then((response) => {
-          const respClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, respClone));
-          return response;
-        })
-      )
-    );
+  // Skip caching HEAD requests (not supported by Cache API)
+  if (event.request.method === 'HEAD') {
+    event.respondWith(fetch(event.request));
     return;
   }
 
+  // For all other requests, try network first, then cache
   event.respondWith(
     fetch(event.request).catch(() => caches.match(event.request))
   );
