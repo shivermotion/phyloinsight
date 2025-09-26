@@ -9,6 +9,7 @@ interface TreeViewerProps {
 
 export default function TreeViewer({ newick }: TreeViewerProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const containerIdRef = useRef<string>(`phylo-tree-${Math.random().toString(36).slice(2)}`);
 
   useEffect(() => {
     if (!ref.current || !newick) return;
@@ -16,7 +17,7 @@ export default function TreeViewer({ newick }: TreeViewerProps) {
 
     // Ensure Newick has branch lengths for all nodes
     let normalizedNewick = newick;
-    
+
     // Simple approach: if no colons at all, add default branch lengths
     if (!normalizedNewick.includes(':')) {
       normalizedNewick = normalizedNewick.replace(/\)/g, ':1.0)').replace(/;/g, ':1.0;');
@@ -28,7 +29,7 @@ export default function TreeViewer({ newick }: TreeViewerProps) {
     } catch (e) {
       // If lookbehind is unsupported, skip this enhancement
     }
-    
+
     console.log('🌳 Rendering tree with Newick:', normalizedNewick);
 
     try {
@@ -47,12 +48,13 @@ export default function TreeViewer({ newick }: TreeViewerProps) {
 
       const width = ref.current?.clientWidth || 800;
       const height = ref.current?.clientHeight || 600;
-      console.log(`📐 Container size: ${width}x${height}`);
+      const selector = `#${containerIdRef.current}`;
+      console.log(`📐 Container size: ${width}x${height}, selector: ${selector}`);
 
       console.time('⏱️ Tree render time');
       // @ts-expect-error render signature is dynamic
       tree.render({
-        container: ref.current,
+        container: selector, // phylotree expects a CSS selector
         width,
         height,
         'left-right-spacing': 'fit-to-size',
@@ -62,10 +64,14 @@ export default function TreeViewer({ newick }: TreeViewerProps) {
       });
       console.timeEnd('⏱️ Tree render time');
 
-      const svgCount = ref.current?.querySelectorAll('svg')?.length ?? 0;
-      const nodeCircles = ref.current?.querySelectorAll('circle')?.length ?? 0;
-      const linkPaths = ref.current?.querySelectorAll('path')?.length ?? 0;
-      console.log(`🖼️ SVGs: ${svgCount}, circles (nodes): ${nodeCircles}, paths (links): ${linkPaths}`);
+      // Defer to next microtask to allow DOM to update
+      queueMicrotask(() => {
+        const containerEl = document.querySelector(selector) as HTMLElement | null;
+        const svgCount = containerEl?.querySelectorAll('svg')?.length ?? 0;
+        const nodeCircles = containerEl?.querySelectorAll('circle')?.length ?? 0;
+        const linkPaths = containerEl?.querySelectorAll('path')?.length ?? 0;
+        console.log(`🖼️ SVGs: ${svgCount}, circles (nodes): ${nodeCircles}, paths (links): ${linkPaths}`);
+      });
 
       console.log('✅ Tree rendered successfully');
     } catch (err) {
@@ -75,6 +81,7 @@ export default function TreeViewer({ newick }: TreeViewerProps) {
 
   return (
     <div
+      id={containerIdRef.current}
       ref={ref}
       className="w-full h-[600px] border border-gray-300 rounded"
       aria-label="Phylogenetic Tree Visualization"
