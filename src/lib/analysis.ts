@@ -6,34 +6,61 @@ export interface AnalysisResult {
 }
 
 // Performs an in-browser analysis using pure-Python code (no external deps)
-// - Parses FASTA
-// - Computes pairwise Hamming distances
+// - Parses FASTA with aggressive sampling for large datasets
+// - Computes pairwise Hamming distances on sampled data
 // - Builds a simple UPGMA tree
 // - Computes a conservation score as mean max-nucleotide-frequency per site
 export async function performAnalysis(pyodide: PyodideInterface, fileContent: string): Promise<AnalysisResult> {
+  console.log('🔬 Starting Python analysis...');
   const sanitized = (fileContent || '').replaceAll('\\', '\\\\').replaceAll("'", "\\'");
-  const code = `
+  
+  // Add timeout to prevent hanging
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error('Analysis timeout after 30 seconds')), 30000);
+  });
+  
+  const analysisPromise = (async () => {
+    const code = `
 from typing import Dict, List, Tuple
 from io import StringIO
 import math
 
-def parse_fasta(text: str) -> Dict[str, str]:
+def parse_fasta(text: str, max_sequences: int = 50, max_length: int = 1000) -> Dict[str, str]:
+    """Parse FASTA with aggressive sampling for large datasets"""
     seqs = {}
     current_id = None
     current_seq = []
+    sequence_count = 0
+    
     for line in text.splitlines():
         line = line.strip()
         if not line:
             continue
         if line.startswith('>'):
             if current_id is not None:
-                seqs[current_id] = ''.join(current_seq)
+                # Truncate sequence if too long
+                full_seq = ''.join(current_seq).upper()
+                if len(full_seq) > max_length:
+                    full_seq = full_seq[:max_length]
+                seqs[current_id] = full_seq
+                sequence_count += 1
+                
+                # Stop if we have enough sequences
+                if sequence_count >= max_sequences:
+                    break
+                    
             current_id = line[1:].strip().split()[0]
             current_seq = []
         else:
             current_seq.append(line.upper())
-    if current_id is not None:
-        seqs[current_id] = ''.join(current_seq)
+    
+    # Handle last sequence
+    if current_id is not None and sequence_count < max_sequences:
+        full_seq = ''.join(current_seq).upper()
+        if len(full_seq) > max_length:
+            full_seq = full_seq[:max_length]
+        seqs[current_id] = full_seq
+    
     return seqs
 
 def pad_sequences(seqs: Dict[str, str]) -> Dict[str, str]:
@@ -128,7 +155,8 @@ def conservation_score(seqs: Dict[str,str]) -> float:
         total += maxf / len(bases)
     return total / max(valid_cols, 1)
 
-seqs = parse_fasta('''${sanitized}''')
+# Use aggressive sampling for large datasets
+seqs = parse_fasta('''${sanitized}''', max_sequences=30, max_length=500)
 if not seqs:
     newick = '(A,B);'
     score = 0.0
@@ -145,14 +173,19 @@ else:
 result = (newick, score)
 result
 `;
-  const res = (await pyodide.runPythonAsync(code)) as [string, number] | unknown;
-  let newick = '(A,(B,C));';
-  let score = 0.0;
-  if (Array.isArray(res) && typeof res[0] === 'string' && typeof res[1] === 'number') {
-    newick = res[0] as string;
-    score = res[1] as number;
-  }
-  return { newick, scores: { conservation: score } };
+    const res = (await pyodide.runPythonAsync(code)) as [string, number] | unknown;
+    let newick = '(A,(B,C));';
+    let score = 0.0;
+    if (Array.isArray(res) && typeof res[0] === 'string' && typeof res[1] === 'number') {
+      newick = res[0] as string;
+      score = res[1] as number;
+    }
+    console.log('✅ Python analysis completed');
+    return { newick, scores: { conservation: score } };
+  })();
+  
+  // Race between analysis and timeout
+  return Promise.race([analysisPromise, timeoutPromise]);
 }
 
 
