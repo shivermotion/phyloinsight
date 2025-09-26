@@ -36,9 +36,20 @@ export default function TreeViewer({ newick }: TreeViewerProps) {
       // @ts-expect-error types not bundled
       const tree = new Phylotree(normalizedNewick);
 
+      // Optional introspection (not all builds expose these methods)
+      try {
+        // @ts-expect-error runtime method
+        const nodes = typeof tree.get_nodes === 'function' ? tree.get_nodes() : [];
+        // @ts-expect-error runtime method
+        const leaves = typeof tree.get_leaves === 'function' ? tree.get_leaves() : [];
+        console.log(`🧩 Tree parsed: ${nodes?.length ?? 0} nodes, ${leaves?.length ?? 0} leaves`);
+      } catch {}
+
       const width = ref.current?.clientWidth || 800;
       const height = ref.current?.clientHeight || 600;
+      console.log(`📐 Container size: ${width}x${height}`);
 
+      console.time('⏱️ Tree render time');
       // @ts-expect-error render signature is dynamic
       tree.render({
         container: ref.current,
@@ -49,6 +60,13 @@ export default function TreeViewer({ newick }: TreeViewerProps) {
         zoom: true,
         'node-circle-size': 4,
       });
+      console.timeEnd('⏱️ Tree render time');
+
+      const svgCount = ref.current?.querySelectorAll('svg')?.length ?? 0;
+      const nodeCircles = ref.current?.querySelectorAll('circle')?.length ?? 0;
+      const linkPaths = ref.current?.querySelectorAll('path')?.length ?? 0;
+      console.log(`🖼️ SVGs: ${svgCount}, circles (nodes): ${nodeCircles}, paths (links): ${linkPaths}`);
+
       console.log('✅ Tree rendered successfully');
     } catch (err) {
       console.error('❌ Tree rendering error:', err);
