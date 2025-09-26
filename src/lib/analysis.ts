@@ -115,8 +115,13 @@ def upgma(ids: List[str], dm: Dict[Tuple[str,str], float]) -> str:
         else:
             outgroup = f"({'|'.join(remaining[:3])})"  # Limit to 3 for readability
         
-        # Ensure all nodes have branch lengths
-        return f"(({a}:{min_dist/2:.4f},{b}:{min_dist/2:.4f}):{min_dist/4:.4f},{outgroup}:{min_dist/2:.4f});"
+        # Ensure all nodes have branch lengths - add length to outgroup if missing
+        if ':' not in outgroup:
+            outgroup_with_length = f"{outgroup}:{min_dist/2:.4f}"
+        else:
+            outgroup_with_length = outgroup
+        
+        return f"(({a}:{min_dist/2:.4f},{b}:{min_dist/2:.4f}):{min_dist/4:.4f},{outgroup_with_length});"
     else:
         return f"({a}:{min_dist/2:.4f},{b}:{min_dist/2:.4f});"
 

@@ -16,13 +16,13 @@ export default function TreeViewer({ newick }: TreeViewerProps) {
 
     // Ensure Newick has branch lengths for all nodes
     let normalizedNewick = newick;
-    
+
     // Simple approach: if no colons at all, add default branch lengths
     if (!normalizedNewick.includes(':')) {
       normalizedNewick = normalizedNewick.replace(/\)/g, ':1.0)').replace(/;/g, ':1.0;');
     }
     // If colons exist, trust the Python output and don't modify it
-    
+
     console.log('🌳 Rendering tree with Newick:', normalizedNewick);
 
     try {
