@@ -82,9 +82,9 @@ def distance_matrix(ids: List[str], seqs: Dict[str, str]) -> Dict[Tuple[str,str]
     return dm
 
 def upgma(ids: List[str], dm: Dict[Tuple[str,str], float]) -> str:
-    # Simplified UPGMA that avoids index errors
+    # Simplified UPGMA that avoids index errors and ensures proper branch lengths
     if len(ids) <= 1:
-        return f"({ids[0] if ids else 'A'}:0.0);"
+        return f"({ids[0] if ids else 'A'}:1.0);"
     
     if len(ids) == 2:
         a, b = ids[0], ids[1]
@@ -115,6 +115,7 @@ def upgma(ids: List[str], dm: Dict[Tuple[str,str], float]) -> str:
         else:
             outgroup = f"({'|'.join(remaining[:3])})"  # Limit to 3 for readability
         
+        # Ensure all nodes have branch lengths
         return f"(({a}:{min_dist/2:.4f},{b}:{min_dist/2:.4f}):{min_dist/4:.4f},{outgroup}:{min_dist/2:.4f});"
     else:
         return f"({a}:{min_dist/2:.4f},{b}:{min_dist/2:.4f});"

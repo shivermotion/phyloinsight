@@ -14,10 +14,22 @@ export default function TreeViewer({ newick }: TreeViewerProps) {
     if (!ref.current || !newick) return;
     d3.select(ref.current).selectAll('*').remove();
 
-    // Ensure Newick has branch lengths
-    const normalizedNewick = newick.includes(':')
-      ? newick
-      : newick.replace(/\)/g, ':1.0)').replace(/;/g, ':1.0;');
+    // Ensure Newick has branch lengths for all nodes
+    let normalizedNewick = newick;
+    
+    // Fix missing branch lengths more comprehensively
+    if (!normalizedNewick.includes(':')) {
+      // No branch lengths at all
+      normalizedNewick = normalizedNewick.replace(/\)/g, ':1.0)').replace(/;/g, ':1.0;');
+    } else {
+      // Some branch lengths exist, but might be missing for some nodes
+      // Add default branch lengths to nodes that don't have them
+      normalizedNewick = normalizedNewick
+        .replace(/([A-Za-z0-9_|]+)(?![:\d])/g, '$1:1.0')  // Add :1.0 to nodes without branch lengths
+        .replace(/\)(?![:\d])/g, ':1.0)')  // Add :1.0 to closing parentheses without branch lengths
+        .replace(/;(?![:\d])/g, ':1.0;');  // Add :1.0 to semicolon without branch lengths
+    }
+    
     console.log('🌳 Rendering tree with Newick:', normalizedNewick);
 
     try {
