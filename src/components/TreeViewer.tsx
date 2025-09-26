@@ -35,11 +35,15 @@ export default function TreeViewer({ newick }: TreeViewerProps) {
       // phylotree exposes a named export { phylotree } which is the constructor
       // @ts-expect-error types not bundled
       const tree = new Phylotree(normalizedNewick);
+
+      const width = ref.current?.clientWidth || 800;
+      const height = ref.current?.clientHeight || 600;
+
       // @ts-expect-error render signature is dynamic
       tree.render({
         container: ref.current,
-        width: 800,
-        height: 600,
+        width,
+        height,
         'left-right-spacing': 'fit-to-size',
         'top-bottom-spacing': 'fit-to-size',
         zoom: true,
