@@ -72,15 +72,8 @@ export default function TreeViewer({ newick }: TreeViewerProps) {
       console.log(`📐 Container size: ${width}x${height}, selector: ${selector}`);
 
       console.time('⏱️ Tree render time');
-      tree.render({
-        container: selector,
-        width,
-        height,
-        'left-right-spacing': 'fit-to-size',
-        'top-bottom-spacing': 'fit-to-size',
-        zoom: true,
-        'node-circle-size': 4,
-      });
+      // Use selector-based render (compatible with phylotree API)
+      tree.render(selector);
       console.timeEnd('⏱️ Tree render time');
 
       queueMicrotask(() => {
