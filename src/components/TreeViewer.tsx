@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useId, useRef } from 'react';
-import { select } from 'd3-selection';
+import * as d3 from 'd3';
 import { phylotree as Phylotree } from 'phylotree';
 
 interface TreeViewerProps {
@@ -29,7 +29,13 @@ export default function TreeViewer({ newick }: TreeViewerProps) {
 
   useEffect(() => {
     if (!ref.current || !newick) return;
-    select(ref.current).selectAll('*').remove();
+
+    // Ensure d3 is available globally for phylotree
+    try {
+      (window as unknown as { d3?: typeof d3 }).d3 = d3;
+    } catch {}
+
+    d3.select(ref.current).selectAll('*').remove();
 
     // Ensure Newick has branch lengths for all nodes
     let normalizedNewick = newick;
