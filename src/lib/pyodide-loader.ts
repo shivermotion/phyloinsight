@@ -2,6 +2,10 @@ import type { PyodideInterface } from 'pyodide';
 
 let pyodideInstance: Promise<PyodideInterface> | null = null;
 
+interface WindowWithPyodide {
+  loadPyodide?: (options: { indexURL: string }) => Promise<PyodideInterface>;
+}
+
 // Load Pyodide via script tag to avoid bundler issues
 function loadPyodideScript(): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -10,8 +14,10 @@ function loadPyodideScript(): Promise<void> {
       return;
     }
 
+    const w = window as unknown as Window & WindowWithPyodide;
+
     // Check if already loaded
-    if ((window as any).loadPyodide) {
+    if (w.loadPyodide) {
       resolve();
       return;
     }
@@ -41,7 +47,8 @@ export function getPyodide(): Promise<PyodideInterface> {
       await loadPyodideScript();
 
       // Now use the global loadPyodide function
-      const loadPyodide = (window as any).loadPyodide;
+      const w = window as unknown as Window & WindowWithPyodide;
+      const loadPyodide = w.loadPyodide;
       if (!loadPyodide) {
         throw new Error('loadPyodide not available after script load');
       }
@@ -53,7 +60,7 @@ export function getPyodide(): Promise<PyodideInterface> {
         return await loadPyodide({ indexURL });
       } catch (loadError) {
         console.error('❌ Pyodide initialization failed:', loadError);
-        throw loadError;
+        throw loadError as Error;
       }
     })();
   }
