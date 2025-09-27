@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useId, useRef } from 'react';
 import * as d3 from 'd3';
+import 'd3-selection-multi';
 import { phylotree as Phylotree } from 'phylotree';
 
 interface TreeViewerProps {
@@ -67,11 +68,12 @@ export default function TreeViewer({ newick }: TreeViewerProps) {
 
       const width = ref.current?.clientWidth || 800;
       const height = ref.current?.clientHeight || 600;
-      console.log(`📐 Container size: ${width}x${height}, id: #${containerId}`);
+      const selector = `#${containerId}`;
+      console.log(`📐 Container size: ${width}x${height}, selector: ${selector}`);
 
       console.time('⏱️ Tree render time');
       tree.render({
-        container: ref.current,
+        container: selector,
         width,
         height,
         'left-right-spacing': 'fit-to-size',
@@ -82,7 +84,7 @@ export default function TreeViewer({ newick }: TreeViewerProps) {
       console.timeEnd('⏱️ Tree render time');
 
       queueMicrotask(() => {
-        const containerEl = ref.current as HTMLElement | null;
+        const containerEl = document.querySelector(selector) as HTMLElement | null;
         const svgCount = containerEl?.querySelectorAll('svg')?.length ?? 0;
         const nodeCircles = containerEl?.querySelectorAll('circle')?.length ?? 0;
         const linkPaths = containerEl?.querySelectorAll('path')?.length ?? 0;
